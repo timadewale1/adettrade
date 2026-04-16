@@ -1,0 +1,148 @@
+{
+  "balance": 50,
+  "startingBalance": 4.76,
+  "lastUpdated": "2026-04-16T15:51:47.057Z",
+  "openTrade": null,
+  "history": [
+    {
+      "id": "EUR-USD-Pullback-Reclaim-1776353279224",
+      "pair": "EUR/USD",
+      "strategy": "Pullback Reclaim",
+      "direction": "BUY",
+      "session": "London",
+      "confidenceBand": "High",
+      "confidenceScore": 81.22,
+      "entry": 1.0834,
+      "stopLoss": 1.0819,
+      "takeProfit": 1.0861,
+      "stopLossPips": 15,
+      "takeProfitPips": 27,
+      "lotSize": 0.01,
+      "riskAmount": 0.02,
+      "rewardAmount": 0.04,
+      "riskPercent": 0.5,
+      "riskToReward": 1.8,
+      "conditions": [
+        "Wait for a pullback into structure and reclaim candle.",
+        "Only enter if spread stays below 2.0 pips.",
+        "Skip the trade if a high-impact news release is due within 30 minutes."
+      ],
+      "invalidation": "Do not take the setup if price invalidates the structure before confirmation.",
+      "rationale": [
+        "Base market quality is 69.66/100 with a +0 learning adjustment.",
+        "Strategy Pullback Reclaim fits current conditions with trend 84/100 and pullback 82/100.",
+        "Event risk is 15/100 and headline risk is 18/100."
+      ],
+      "marketSource": "Seeded market snapshot",
+      "eventRiskSummary": "No high-impact scheduled event is inside the trade window.",
+      "blockedByEvents": false,
+      "watchedEvents": [],
+      "headlineRisk": {
+        "riskScore": 18,
+        "blocked": false,
+        "summary": "Headline monitor fallback is active, so surprise-news protection is limited.",
+        "headlines": []
+      },
+      "multiTimeframe": {
+        "aligned": false,
+        "dominantDirection": "BUY",
+        "confidenceBoost": 0,
+        "snapshots": [],
+        "summary": "Multi-timeframe confirmation is not available for this snapshot."
+      },
+      "pairRotation": {
+        "rankedPairs": [
+          {
+            "pair": "EUR/USD",
+            "score": 69.66,
+            "reason": "London session, trend 84/100, liquidity 91/100"
+          },
+          {
+            "pair": "GBP/USD",
+            "score": 63.36,
+            "reason": "London session, trend 79/100, liquidity 86/100"
+          },
+          {
+            "pair": "USD/JPY",
+            "score": 59.7,
+            "reason": "Overlap session, trend 77/100, liquidity 88/100"
+          },
+          {
+            "pair": "AUD/USD",
+            "score": 45.8,
+            "reason": "Tokyo session, trend 61/100, liquidity 64/100"
+          }
+        ],
+        "selectedPair": "EUR/USD",
+        "summary": "Rotation currently favors EUR/USD because it has the cleanest live conditions and strongest recent edge."
+      },
+      "managementPlan": {
+        "breakEvenTriggerPips": 12,
+        "partialTakeProfitPips": 15,
+        "trailingStopPips": 10,
+        "earlyExitRules": [
+          "Exit early if price fails to hold beyond the entry zone after confirmation.",
+          "Reduce exposure if a surprise headline sharply changes the trade thesis.",
+          "Exit before major scheduled news if the first target has not been reached."
+        ]
+      },
+      "calibration": {
+        "sampleSize": 0,
+        "observedWinRate": null,
+        "expectedBand": "High",
+        "summary": "Calibration sample is still too small for this confidence band."
+      },
+      "generatedAt": "2026-04-16T15:27:55.821Z",
+      "aiAnalysis": {
+        "verdict": "WATCH",
+        "confidence": 65,
+        "summary": "Trade shows structured methodology but lacks multi-timeframe alignment and calibration data.",
+        "strengths": [
+          "Clear entry and exit rules",
+          "Low event and headline risk",
+          "Defined management plan with break-even and trailing stops"
+        ],
+        "risks": [
+          "No multi-timeframe confirmation",
+          "No historical calibration data",
+          "Profit target less than twice the stop loss in pip distance"
+        ],
+        "managementNotes": [
+          "Monitor spread closely to stay below 2.0 pips before entry",
+          "Watch for high-impact news within 30 minutes and skip if present",
+          "Be ready to exit early if price does not hold entry zone after confirmation"
+        ],
+        "improvementIdeas": [
+          "Obtain multi-timeframe confirmation before entry to strengthen trade",
+          "Increase sample size for calibration to validate confidence score",
+          "Consider adjusting take profit to increase reward to risk ratio beyond 2:1 pip distance"
+        ]
+      },
+      "status": "CANCELLED",
+      "actualPnl": 0,
+      "closedAt": "2026-04-16T15:37:44.306Z",
+      "resultingBalance": 4.76
+    }
+  ],
+  "journal": [
+    {
+      "id": "EUR-USD-Pullback-Reclaim-1776353279224",
+      "pair": "EUR/USD",
+      "session": "London",
+      "strategy": "Pullback Reclaim",
+      "direction": "BUY",
+      "confidenceScore": 81.22,
+      "riskPercent": 0.5,
+      "headlineRiskScore": 18,
+      "eventBlocked": false,
+      "headlineBlocked": false,
+      "aiVerdict": "WATCH",
+      "multiTimeframeAligned": false,
+      "generatedAt": "2026-04-16T15:27:55.821Z",
+      "weekday": 4,
+      "hourUtc": 15,
+      "status": "CANCELLED",
+      "pnl": 0
+    }
+  ]
+}
