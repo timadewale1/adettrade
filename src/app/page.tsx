@@ -48,10 +48,30 @@ const initialLoadState: LoadState = {
 
 async function jsonFetch<T>(input: RequestInfo, init?: RequestInit) {
   const response = await fetch(input, init);
-  const data = (await response.json()) as T & { error?: string };
+  const raw = await response.text();
+  let data: (T & { error?: string }) | null = null;
+
+  if (raw.trim().length > 0) {
+    try {
+      data = JSON.parse(raw) as T & { error?: string };
+    } catch {
+      throw new Error(
+        response.ok
+          ? "The server returned an invalid response."
+          : `Request failed with status ${response.status}.`,
+      );
+    }
+  }
 
   if (!response.ok) {
-    throw new Error(data.error ?? "Request failed.");
+    throw new Error(
+      data?.error ??
+        (raw.trim().length > 0 ? raw : `Request failed with status ${response.status}.`),
+    );
+  }
+
+  if (!data) {
+    throw new Error("The server returned an empty response.");
   }
 
   return data;

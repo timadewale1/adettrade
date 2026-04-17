@@ -6,16 +6,16 @@ import { getLearningSummary } from "@/lib/learning";
 import { ResolveTradeRequest } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
-  const body = (await request.json()) as ResolveTradeRequest;
-
-  if (!body.outcome || !["WON", "LOST", "CANCELLED"].includes(body.outcome)) {
-    return NextResponse.json(
-      { error: "Outcome must be WON, LOST, or CANCELLED." },
-      { status: 400 },
-    );
-  }
-
   try {
+    const body = (await request.json()) as ResolveTradeRequest;
+
+    if (!body.outcome || !["WON", "LOST", "CANCELLED"].includes(body.outcome)) {
+      return NextResponse.json(
+        { error: "Outcome must be WON, LOST, or CANCELLED." },
+        { status: 400 },
+      );
+    }
+
     const state = await resolveOpenTrade(body);
     return NextResponse.json({
       state,
