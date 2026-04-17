@@ -150,9 +150,15 @@ ${JSON.stringify(
       return null;
     }
 
-    const review = JSON.parse(text) as AiTradeReview;
-    return review;
-  } catch {
+    try {
+      const review = JSON.parse(text) as AiTradeReview;
+      return review;
+    } catch (parseError) {
+      console.error("Failed to parse AI review JSON:", { text, parseError });
+      return null;
+    }
+  } catch (fetchError) {
+    console.error("AI review API error:", fetchError);
     return null;
   }
 }
