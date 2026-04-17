@@ -1,4 +1,5 @@
 import { promises as fs } from "fs";
+import os from "os";
 import path from "path";
 
 import {
@@ -10,7 +11,9 @@ import {
 } from "@/lib/types";
 import { roundTo } from "@/lib/utils";
 
-const dataFile = path.join(process.cwd(), "data", "account-state.json");
+const preferredDataFile = path.join(process.cwd(), "data", "account-state.json");
+const tempDataFile = path.join(os.tmpdir(), "trading-account-state.json");
+let activeDataFile = preferredDataFile;
 
 const defaultState: BalanceState = {
   balance: 20,
@@ -22,17 +25,38 @@ const defaultState: BalanceState = {
 };
 
 async function ensureStore() {
-  await fs.mkdir(path.dirname(dataFile), { recursive: true });
   try {
-    await fs.access(dataFile);
-  } catch {
-    await fs.writeFile(dataFile, JSON.stringify(defaultState, null, 2), "utf8");
+    await fs.mkdir(path.dirname(activeDataFile), { recursive: true });
+    await fs.access(activeDataFile);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    const code =
+      typeof error === "object" && error && "code" in error
+        ? String((error as { code?: unknown }).code)
+        : "";
+
+    if (
+      activeDataFile === preferredDataFile &&
+      (code === "EROFS" || message.includes("read-only file system"))
+    ) {
+      activeDataFile = tempDataFile;
+      await fs.mkdir(path.dirname(activeDataFile), { recursive: true });
+      try {
+        await fs.access(activeDataFile);
+      } catch {
+        await fs.writeFile(activeDataFile, JSON.stringify(defaultState, null, 2), "utf8");
+      }
+      return;
+    }
+
+    await fs.mkdir(path.dirname(activeDataFile), { recursive: true });
+    await fs.writeFile(activeDataFile, JSON.stringify(defaultState, null, 2), "utf8");
   }
 }
 
 export async function readAccountState(): Promise<BalanceState> {
   await ensureStore();
-  const raw = await fs.readFile(dataFile, "utf8");
+  const raw = await fs.readFile(activeDataFile, "utf8");
   const parsed = JSON.parse(raw) as Partial<BalanceState>;
   return {
     balance: parsed.balance ?? defaultState.balance,
@@ -45,7 +69,8 @@ export async function readAccountState(): Promise<BalanceState> {
 }
 
 async function writeAccountState(state: BalanceState) {
-  await fs.writeFile(dataFile, JSON.stringify(state, null, 2), "utf8");
+  await ensureStore();
+  await fs.writeFile(activeDataFile, JSON.stringify(state, null, 2), "utf8");
   return state;
 }
 
