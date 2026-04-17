@@ -215,6 +215,8 @@ export type StrategyVariant =
   | "Pullback Reclaim"
   | "Reversal Fade";
 
+export type SignalMode = "Conservative" | "Balanced" | "Aggressive";
+
 export interface StrategyInsight {
   strategy: StrategyVariant;
   trades: number;
@@ -264,6 +266,8 @@ export interface MonteCarloReport {
 
 export interface SignalRequest {
   manualBalance?: number;
+  selectedPairs?: CurrencyPair[];
+  mode?: SignalMode;
 }
 
 export interface SignalResponse {

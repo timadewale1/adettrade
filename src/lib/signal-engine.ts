@@ -9,13 +9,14 @@ import {
   MarketSnapshot,
   PairRotationSnapshot,
   SignalJournalEntry,
+  SignalMode,
   StrategyVariant,
   TradeHistoryEntry,
   TradePlan,
 } from "@/lib/types";
 import { clamp, pipSize, roundTo, scoreToBand } from "@/lib/utils";
 
-const supportedPairs: CurrencyPair[] = ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD"];
+export const supportedPairs: CurrencyPair[] = ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD"];
 const strategies: StrategyVariant[] = [
   "Trend Continuation",
   "Breakout Expansion",
@@ -105,12 +106,22 @@ function buildConditions(strategy: StrategyVariant) {
   }
 }
 
-function noTradeReasons(snapshot: MarketSnapshot) {
+function noTradeReasons(snapshot: MarketSnapshot, mode: SignalMode) {
   const reasons: string[] = [];
   if (snapshot.spreadPips > 1.8) reasons.push("spread is too wide");
-  if (snapshot.multiTimeframe && !snapshot.multiTimeframe.aligned) reasons.push("timeframes are not fully aligned");
-  if (snapshot.volatilityScore < 50) reasons.push("volatility is too weak");
-  if (snapshot.pullbackQuality < 58 && snapshot.trendStrength < 65) reasons.push("market structure is too messy");
+  const timeframeVotes = snapshot.multiTimeframe?.snapshots.filter(
+    (item) => item.directionBias === snapshot.multiTimeframe?.dominantDirection,
+  ).length ?? 0;
+  const allowPartialAlignment = mode !== "Conservative";
+  if (snapshot.multiTimeframe && !snapshot.multiTimeframe.aligned) {
+    if (!(allowPartialAlignment && timeframeVotes >= 2)) {
+      reasons.push("timeframes are not fully aligned");
+    }
+  }
+  const volatilityFloor = mode === "Aggressive" ? 44 : mode === "Balanced" ? 48 : 50;
+  if (snapshot.volatilityScore < volatilityFloor) reasons.push("volatility is too weak");
+  const structureFloor = mode === "Aggressive" ? 54 : mode === "Balanced" ? 56 : 58;
+  if (snapshot.pullbackQuality < structureFloor && snapshot.trendStrength < 65) reasons.push("market structure is too messy");
   return reasons;
 }
 
@@ -214,8 +225,11 @@ export async function generateBestSignal(
   balance: number,
   history: TradeHistoryEntry[] = [],
   journal: SignalJournalEntry[] = [],
+  selectedPairs: CurrencyPair[] = supportedPairs,
+  mode: SignalMode = "Balanced",
 ) {
-  const liveSnapshots = await getLiveMarketSnapshots(supportedPairs).catch(() => null);
+  const eligiblePairs = selectedPairs.length ? selectedPairs : supportedPairs;
+  const liveSnapshots = await getLiveMarketSnapshots(eligiblePairs).catch(() => null);
   if (!liveSnapshots || liveSnapshots.length === 0) {
     throw new Error("Live market data is unavailable right now. No seeded fallback is being used.");
   }
@@ -239,10 +253,11 @@ export async function generateBestSignal(
     }))
     .sort((a, b) => b.score - a.score);
 
-  const topPairs = new Set(rotationRanking.slice(0, 2).map((item) => item.pair));
+  const maxPairs = mode === "Aggressive" ? 3 : 2;
+  const topPairs = new Set(rotationRanking.slice(0, maxPairs).map((item) => item.pair));
   const tradableSnapshots = sourceSnapshots
     .filter((snapshot) => topPairs.has(snapshot.pair))
-    .filter((snapshot) => noTradeReasons(snapshot).length < 3);
+    .filter((snapshot) => noTradeReasons(snapshot, mode).length < (mode === "Aggressive" ? 4 : 3));
 
   const rotation = buildRotationSnapshot(rotationRanking, rotationRanking[0]?.pair ?? "EUR/USD");
   const candidates = tradableSnapshots.flatMap((snapshot) =>
@@ -285,16 +300,19 @@ export async function generateBestSignal(
       rotation,
     });
     const skipReasons = [
-      ...noTradeReasons(candidate.snapshot),
+      ...noTradeReasons(candidate.snapshot, mode),
       trade.blockedByEvents ? "scheduled event risk is too high" : "",
       trade.headlineRisk.blocked ? "headline risk is too unstable" : "",
       trade.aiAnalysis?.verdict === "SKIP" ? "AI reviewer rejected the setup" : "",
+      mode === "Conservative" && trade.aiAnalysis?.verdict === "WATCH" ? "AI reviewer wants more confirmation" : "",
       trade.calibration.sampleSize >= 4 && (trade.calibration.observedWinRate ?? 0) < 45
         ? "similar confidence setups are underperforming historically"
         : "",
     ].filter(Boolean);
 
-    if (trade.confidenceScore >= 68 && skipReasons.length === 0) {
+    const confidenceFloor = mode === "Aggressive" ? 62 : mode === "Balanced" ? 66 : 68;
+
+    if (trade.confidenceScore >= confidenceFloor && skipReasons.length === 0) {
       return { signal: trade, diagnostics: [] };
     }
 

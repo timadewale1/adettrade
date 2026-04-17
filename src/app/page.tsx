@@ -18,7 +18,9 @@ import {
   AccountAnalytics,
   BacktestReport,
   BalanceState,
+  CurrencyPair,
   LearningSummary,
+  SignalMode,
   SignalResponse,
   TradePlan,
 } from "@/lib/types";
@@ -80,6 +82,13 @@ async function jsonFetch<T>(input: RequestInfo, init?: RequestInit) {
 export default function Home() {
   const [loadState, setLoadState] = useState<LoadState>(initialLoadState);
   const [manualBalance, setManualBalance] = useState("20");
+  const [mode, setMode] = useState<SignalMode>("Balanced");
+  const [selectedPairs, setSelectedPairs] = useState<CurrencyPair[]>([
+    "EUR/USD",
+    "GBP/USD",
+    "USD/JPY",
+    "AUD/USD",
+  ]);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -118,8 +127,8 @@ export default function Home() {
       try {
         const payload =
           manualBalance.trim().length > 0
-            ? { manualBalance: Number(manualBalance) }
-            : {};
+            ? { manualBalance: Number(manualBalance), selectedPairs, mode }
+            : { selectedPairs, mode };
         const data = await jsonFetch<SignalResponse>("/api/signal", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -207,6 +216,16 @@ export default function Home() {
   const openTrade = account?.openTrade ?? null;
   const signal = loadState.signal ?? openTrade;
 
+  const togglePair = (pair: CurrencyPair) => {
+    setSelectedPairs((current) =>
+      current.includes(pair)
+        ? current.length === 1
+          ? current
+          : current.filter((item) => item !== pair)
+        : [...current, pair],
+    );
+  };
+
   return (
     <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       <section className="glass overflow-hidden rounded-[2rem]">
@@ -283,10 +302,54 @@ export default function Home() {
                   Save balance only
                 </button>
               </div>
+              <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+                <p className="text-sm text-slate-300">Signal mode</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(["Conservative", "Balanced", "Aggressive"] as SignalMode[]).map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setMode(item)}
+                      className={`rounded-full px-3 py-2 text-sm font-medium transition ${
+                        mode === item
+                          ? "bg-sky-300 text-slate-950"
+                          : "border border-white/10 bg-white/6 text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+                <p className="text-sm text-slate-300">Pairs to scan</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD"] as CurrencyPair[]).map((pair) => (
+                    <button
+                      key={pair}
+                      type="button"
+                      onClick={() => togglePair(pair)}
+                      className={`rounded-full px-3 py-2 text-sm font-medium transition ${
+                        selectedPairs.includes(pair)
+                          ? "bg-emerald-300 text-slate-950"
+                          : "border border-white/10 bg-white/6 text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {pair}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4 text-sm leading-6 text-amber-100">
                 The engine keeps your running balance in storage. After a trade finishes, click the result and it
                 updates the next expected balance automatically.
               </div>
+              {Number(manualBalance || 0) < 10 ? (
+                <div className="rounded-2xl border border-rose-300/20 bg-rose-300/10 p-4 text-sm leading-6 text-rose-100">
+                  Small-balance protection is sizing-only. Your balance now affects lot size and loss control, not whether
+                  a valid setup is allowed to qualify.
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

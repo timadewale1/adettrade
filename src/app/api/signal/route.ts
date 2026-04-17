@@ -5,8 +5,8 @@ import {
   saveOpenTrade,
   setManualBalance,
 } from "@/lib/account-store";
-import { generateBestSignal } from "@/lib/signal-engine";
-import { SignalRequest, SignalResponse } from "@/lib/types";
+import { generateBestSignal, supportedPairs } from "@/lib/signal-engine";
+import { CurrencyPair, SignalMode, SignalRequest, SignalResponse } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +15,14 @@ export async function POST(request: NextRequest) {
     if (typeof body.manualBalance === "number" && body.manualBalance > 0) {
       await setManualBalance(body.manualBalance);
     }
+
+    const requestedPairs = Array.isArray(body.selectedPairs)
+      ? body.selectedPairs.filter((pair): pair is CurrencyPair => supportedPairs.includes(pair))
+      : supportedPairs;
+    const mode: SignalMode =
+      body.mode === "Conservative" || body.mode === "Aggressive" || body.mode === "Balanced"
+        ? body.mode
+        : "Balanced";
 
     const state = await readAccountState();
 
@@ -32,7 +40,13 @@ export async function POST(request: NextRequest) {
     let signalResult: Awaited<ReturnType<typeof generateBestSignal>> | null = null;
 
     try {
-      signalResult = await generateBestSignal(state.balance, state.history, state.journal);
+      signalResult = await generateBestSignal(
+        state.balance,
+        state.history,
+        state.journal,
+        requestedPairs,
+        mode,
+      );
     } catch (error) {
       return NextResponse.json(
         {
