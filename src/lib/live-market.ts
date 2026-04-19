@@ -23,6 +23,13 @@ const pairMap: Record<CurrencyPair, string> = {
   "AUD/USD": "AUD/USD",
 };
 
+const atrBaselinePips: Record<CurrencyPair, number> = {
+  "EUR/USD": 9,
+  "GBP/USD": 11,
+  "USD/JPY": 10,
+  "AUD/USD": 8,
+};
+
 const intervalConfig: Record<Interval, { outputsize: number }> = {
   "15min": { outputsize: 80 },
   "1h": { outputsize: 60 },
@@ -52,6 +59,12 @@ function sessionFromUtcHour(hour: number) {
   if (hour >= 12 && hour < 17) return "Overlap" as const;
   if (hour >= 17 && hour < 22) return "New York" as const;
   return "Tokyo" as const;
+}
+
+function volatilityFromAtr(pair: CurrencyPair, atrPips: number) {
+  const baseline = atrBaselinePips[pair];
+  const normalized = (atrPips / baseline) * 55;
+  return roundTo(Math.min(90, Math.max(34, normalized)));
 }
 
 function buildTimeframeSnapshot(pair: CurrencyPair, timeframe: Interval, candles: Candle[]): TimeframeSnapshot {
@@ -158,7 +171,7 @@ async function buildPairSnapshot(pair: CurrencyPair, apiKey: string): Promise<Ma
         ),
       ),
     ),
-    volatilityScore: roundTo(Math.min(90, Math.max(45, oneHour.atrPips * 2.5))),
+    volatilityScore: volatilityFromAtr(pair, oneHour.atrPips),
     liquidityScore: pair === "EUR/USD" ? 92 : pair === "GBP/USD" ? 86 : pair === "USD/JPY" ? 88 : 78,
     newsRisk: multiTimeframe.aligned ? 15 : 28,
     directionBias: multiTimeframe.dominantDirection,

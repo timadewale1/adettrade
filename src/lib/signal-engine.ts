@@ -118,7 +118,7 @@ function noTradeReasons(snapshot: MarketSnapshot, mode: SignalMode) {
       reasons.push("timeframes are not fully aligned");
     }
   }
-  const volatilityFloor = mode === "Aggressive" ? 44 : mode === "Balanced" ? 48 : 50;
+  const volatilityFloor = mode === "Aggressive" ? 36 : mode === "Balanced" ? 40 : 44;
   if (snapshot.volatilityScore < volatilityFloor) reasons.push("volatility is too weak");
   const structureFloor = mode === "Aggressive" ? 54 : mode === "Balanced" ? 56 : 58;
   if (snapshot.pullbackQuality < structureFloor && snapshot.trendStrength < 65) reasons.push("market structure is too messy");
